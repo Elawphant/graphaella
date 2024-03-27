@@ -1,0 +1,31 @@
+{
+    "compilerOptions": {
+        "target": "es2021",
+        "module": "esnext",
+        "moduleResolution": "bundler",
+        "outDir": "./dist",
+        "strict": true,
+        "esModuleInterop": true,
+        "verbatimModuleSyntax": true,
+        "allowJs": false,
+        "noUncheckedIndexedAccess": true,
+        "allowSyntheticDefaultImports": true,
+        "noPropertyAccessFromIndexSignature": true,
+        "noEmitOnError": false,
+        "noEmit": true,
+        "experimentalDecorators": true,
+        "declaration": true,
+        "declarationMap": true,
+        "inlineSourceMap": true,
+        "inlineSources": true,
+        "types": []
+
+    },
+    "include": [
+        "src/**/*"
+    ],
+    "exclude": [
+        "node_modules",
+        "**/*.spec.ts"
+    ]
+}
