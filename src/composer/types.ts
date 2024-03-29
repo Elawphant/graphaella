@@ -1,17 +1,6 @@
 import type { withScalar } from './with-scalar';
 import type { fromVariable } from './from-variable';
 
-const DASHERIZED_KEYS = [
-  '__alias',
-  '__directives',
-  '__scalars',
-  '__queryParams',
-  '__toLocalType',
-  '__node',
-  '__list',
-  '__connection',
-] as const;
-
 enum ExpectedType {
   node = 'node',
   nodeList = 'nodeList',
@@ -33,50 +22,47 @@ type Directive = {
 
 type DirectivesProps = {
   __directives?: Directive[];
-};
+} | {};
 
 type AliasProps = {
   __alias?: string | undefined;
-};
+} | {};
 
 type ScalarField = {} | AliasProps | DirectivesProps;
 
-interface ComplexFieldProps {
+type ComplexFieldProps = {
   __scalars?: FieldName[];
-  __variables?: Record<string, ReturnType<typeof withScalar> | unknown>;
-}
+  __params?: Record<string, unknown | ReturnType<typeof fromVariable>>;
+} | {};
 
-interface ToLocalTypeProps {
-  __toLocalType: string;
-}
+type ToLocalTypeProps = {
+  __toLocalType?: string;
+} | {}
 
 type ObjectField = {
   [key in string]:
-    | ScalarField
-    | ObjectField
-    | NodeField
-    | ConnectionField
-    | NodeListField
-    | undefined;
-} & (AliasProps | DirectivesProps | ComplexFieldProps);
+  | ScalarField
+  | ObjectField
+  | NodeField
+  | ConnectionField
+  | NodeListField
+  | undefined;
+} & AliasProps & DirectivesProps & ComplexFieldProps;
 
-type NodeField = ObjectField &
-  ToLocalTypeProps & {
-    __node: boolean;
-  };
+type NodeField = {
+  __node: boolean;
+} & ObjectField & ToLocalTypeProps;
 
 type ConnectionField = {
-  [key in string]: ObjectField | undefined;
-} & (AliasProps | DirectivesProps | ComplexFieldProps) &
-  ToLocalTypeProps & {
-    __connection: boolean;
-    edges?: ObjectField | NodeListField;
-  };
+  __connection: boolean;
+  edges?: ObjectField | NodeListField;
+} & {
+    [key in string]?: ObjectField;
+  } & AliasProps & DirectivesProps & ComplexFieldProps & ToLocalTypeProps;
 
-type NodeListField = ObjectField &
-  ToLocalTypeProps & {
-    __list: boolean;
-  };
+type NodeListField = {
+  __list: boolean;
+} & ObjectField & ToLocalTypeProps;
 
 type QueryField =
   | ScalarField
@@ -85,31 +71,38 @@ type QueryField =
   | ConnectionField
   | NodeListField;
 
-type QueryOperation = {
-  [key: FieldName]:
-    | ScalarField
-    | ObjectField
-    | NodeField
-    | ConnectionField
-    | NodeListField;
-} & {
-  __directiveParams?: Record<string, ReturnType<typeof withScalar> | unknown>;
-  __operationName?: string,
+
+type OperationBase = {
+  __operationName?: string;
+  __variables?: Record<string, ReturnType<typeof withScalar>>;
 } & DirectivesProps;
 
-type MutationOperation = {
+type QueryOperation = OperationBase & {
   [key: FieldName]:
-    | ObjectField
-    | NodeField
-    | ConnectionField
-    | NodeListField;
-} & {
-  __directiveParams?: Record<string, ReturnType<typeof withScalar> | unknown>;
-  __operationName?: string,
-} & DirectivesProps;
+  | ScalarField
+  | ObjectField
+  | NodeField
+  | ConnectionField
+  | NodeListField;
+};
 
-// TODO: implement subscription on composer
+type MutationOperation = OperationBase & {
+  [key: FieldName]: ObjectField | NodeField | ConnectionField | NodeListField;
+};
+
 type SubscriptionOperation = MutationOperation;
+
+type Fragment = {
+  [key: FieldName]:
+  | ScalarField
+  | ObjectField
+  | NodeField
+  | ConnectionField
+  | NodeListField;
+} & {
+  __variables?: Record<string, ReturnType<typeof withScalar>>;
+  __fragmentName: string;
+} & DirectivesProps;
 
 type Expectation = {
   responseKey: string; // the key on response: i.e. dataKey or alias
@@ -118,38 +111,32 @@ type Expectation = {
   level: number;
   alias?: string;
 } & (
-  | {
+    | {
       type: ExpectedType.node;
       localTypeName: string;
-      variables?: Record<string, ReturnType<typeof withScalar>>;
-    }
-  | {
+      params?: Record<string, unknown | ReturnType<typeof fromVariable>>;
+    } | {
       type: ExpectedType.connection;
       localTypeName: string;
-      variables?: Record<string, ReturnType<typeof withScalar>>;
-    }
-  | {
+      params?: Record<string, unknown | ReturnType<typeof fromVariable>>;
+    } | {
       type: ExpectedType.edges;
       localTypeName: string;
-      variables?: Record<string, ReturnType<typeof withScalar>>;
-    }
-  | {
+      params?: Record<string, unknown | ReturnType<typeof fromVariable>>;
+    } | {
       type: ExpectedType.nodeList;
       localTypeName: string;
-      variables?: Record<string, ReturnType<typeof withScalar>>;
-    }
-  | {
+      params?: Record<string, unknown | ReturnType<typeof fromVariable>>;
+    } | {
       type: ExpectedType.record;
-      variables?: Record<string, ReturnType<typeof withScalar>>;
-    }
-  | {
+      params?: Record<string, unknown | ReturnType<typeof fromVariable>>;
+    } | {
       type: ExpectedType.scalar;
       localTypeName: string;
-    }
-  | {
+    } | {
       type: ExpectedType.negligible;
     }
-);
+  );
 
 export type {
   QueryField,
@@ -164,5 +151,7 @@ export type {
   MutationOperation,
   SubscriptionOperation,
   FieldName,
+  ComplexFieldProps,
+  Fragment
 };
 export { ExpectedType };

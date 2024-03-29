@@ -1,5 +1,3 @@
-
-
 export { query } from './composer/query';
 export { mutation } from './composer/mutation';
 export { subscription } from './composer/subscription';

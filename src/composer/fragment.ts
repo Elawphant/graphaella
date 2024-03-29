@@ -1,13 +1,13 @@
 import type { Composer } from './composer';
-import type { Directive, QueryOperation } from './types';
+import type { QueryOperation } from './types';
 
 /**
- * A function for generating a query operation GraphQL source documents
+ * A function for generating a fragment GraphQL source documents
  * e.g.
  * ```ts
- * import { compose, query, withScalar, fromVariable } from '@graphaella';
+ * import { fragment } from '@graphaella';
  *
- * compose(query({
+ * compose(fragment{
  *   node: {
  *     age: {
  *       __alias: 'yearsLived'
@@ -41,28 +41,28 @@ import type { Directive, QueryOperation } from './types';
  * }));
  * ```
  */
-const query = (operation: QueryOperation) => {
-  const { __directives, __variables, __operationName, ...query } =
+const fragment = (operation: QueryOperation) => {
+  const { __variables, __fragmentName, ...query } =
     operation;
-  
-  const __query = (composer: Composer) => {
+  const level = 0;
+
+  const __fragment = (composer: Composer) => {
 
     let tree = '';
 
     // compose variables first to register them for access inside the tree
     const operationVariables = composer.composeVariables(__variables);
 
-    Object.entries(query).forEach(([key, field]) => {
-      tree += ' ' + composer.resolveFields(key, field, [], 1);
-    });
-
-    // IMPORTANT! must be called after resolveFields with all the tree to ensure all variables are recorded!
-    return `query ${composer.operationName} ${operationVariables} ${composer.composeDirectives(__directives as Directive[] | undefined)} { ${tree} }`;
+    // TODO: Fragments should be parsed to expectations differently
+    // Object.entries(query).forEach(([key, field]) => {
+    //   tree += ' ' + composer.resolveFields(key, field, [], level + 1);
+    // });
+    return `fragment ${composer.operationName} ${operationVariables}} { ${tree} }`;
   };
 
-  __query.isComposer = true;
-  __query.operationName = __operationName ?? 'Query';
-  return __query;
+  __fragment.isComposer = true;
+  __fragment.fragmentName = __fragmentName ?? 'Fragment';
+  return __fragment;
 };
 
-export { query };
+export { fragment };

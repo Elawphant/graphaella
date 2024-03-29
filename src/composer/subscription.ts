@@ -1,12 +1,12 @@
 import type { Composer } from './composer';
-import type { SubscriptionOperation } from './types';
+import type { Directive, SubscriptionOperation } from './types';
 
-/** 
- * A function for generating a subscription operation GraphQL source documents 
- * e.g. 
+/**
+ * A function for generating a subscription operation GraphQL source documents
+ * e.g.
  * ```ts
  * import { compose, subscription, withScalar } from '@graphaella';
- * 
+ *
  * compose(subscription({
  *   newPost: {
  *     __alias: 'post',
@@ -21,30 +21,19 @@ import type { SubscriptionOperation } from './types';
  * ```
  */
 const subscription = (operation: SubscriptionOperation) => {
-  const { __operationName, __directives, __directiveParams, __input, ...mutation } = operation;
+  const { __operationName, __directives, __variables, ...mutation } =
+    operation;
 
   const __subscription = (composer: Composer) => {
     const level = 0;
-    if (__input) {
-      // only register
-      composer.handleVariables(__input, level);
-    }
     let tree = '';
+    // IMPORTANT! must be called before resolveFields to ensure all variables are recorded before tree!
+    const operationVariables = composer.composeVariables(__variables);
+
     Object.entries(mutation).forEach(([fieldName, fieldValue]) => {
-      tree += composer.resolveFields(
-        fieldName,
-        fieldValue,
-        [],
-        level + 1,
-      );
+      tree += ' ' + composer.resolveFields(fieldName, fieldValue, [], level + 1);
     });
-
-    const variablesSet = composer.getOperationVairablesFor(0);
-
-    // IMPORTANT! must be called after resolveFields with all the tree to ensure all variables are recorded!
-    const operationVariables =
-      composer.composeOperationVariables();
-    return `subscription ${composer.operationName} ${operationVariables} ${composer.composeDirectives(__directives ?? [], variablesSet ?? new Set())} { ${tree} }`;
+    return `subscription ${composer.operationName} ${operationVariables} ${composer.composeDirectives(__directives as Directive[] | undefined)} { ${tree} }`;
   };
 
   __subscription.isComposer = true;
