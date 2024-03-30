@@ -1,7 +1,5 @@
+import type { OperationBuilder } from '..';
 import { Composer } from './composer';
-import type { mutation } from './mutation';
-import type { query } from './query';
-import type { subscription } from './subscription';
 
 /**
  * Main function for generating a GraphQL source document.
@@ -10,7 +8,7 @@ import type { subscription } from './subscription';
  *
  * */
 const compose = (
-  composable: ReturnType<typeof query | typeof subscription | typeof mutation>,
+  composable: ReturnType<OperationBuilder>,
 ) => {
   const composer = new Composer(composable.operationName);
   const requestable = {
@@ -20,7 +18,7 @@ const compose = (
   };
 
   return {
-    document: requestable,
+    document: JSON.stringify(requestable),
     getExpectation: composer.getExpectation.bind(composer),
   };
 };

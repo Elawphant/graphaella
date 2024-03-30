@@ -17,7 +17,7 @@ import type { QueryOperation } from './types';
  *       __alias: 'pals',
  *       __queryParams: {
  *         name__icontains: "John",
- *         includeFriends: withScalar(true, 'Boolean', false)
+ *         includeFriends: variable(true, 'Boolean', false)
  *       },
  *       __connection: true,
  *       __scalars: ['id', '__typename'],
@@ -32,7 +32,7 @@ import type { QueryOperation } from './types';
  *     },
  *     __scalars: ['id', '__typename'],
  *     __queryParams: {
- *       id: withScalar(1, 'ID', true),
+ *       id: variable(1, 'ID', true),
  *     },
  *     __alias: "userNode",
  *     __toLocalType: 'user',
@@ -51,7 +51,7 @@ const fragment = (operation: QueryOperation) => {
     let tree = '';
 
     // compose variables first to register them for access inside the tree
-    const operationVariables = composer.composeVariables(__variables);
+    const operationVariables = composer.variables(__variables);
 
     // TODO: Fragments should be parsed to expectations differently
     // Object.entries(query).forEach(([key, field]) => {

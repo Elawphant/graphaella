@@ -1,5 +1,6 @@
-import type { withScalar } from './with-scalar';
+import type { variable } from './variable';
 import type { fromVariable } from './from-variable';
+import type { Composer } from './composer';
 
 enum ExpectedType {
   node = 'node',
@@ -9,7 +10,9 @@ enum ExpectedType {
   record = 'record',
   scalar = 'scalar',
   negligible = 'negligible',
-}
+};
+
+type OperationType = 'query' | 'mutation' |'subscription';
 
 type FieldName = string;
 
@@ -74,7 +77,7 @@ type QueryField =
 
 type OperationBase = {
   __operationName?: string;
-  __variables?: Record<string, ReturnType<typeof withScalar>>;
+  __variables?: Record<string, ReturnType<typeof variable>>;
 } & DirectivesProps;
 
 type QueryOperation = OperationBase & {
@@ -87,7 +90,11 @@ type QueryOperation = OperationBase & {
 };
 
 type MutationOperation = OperationBase & {
-  [key: FieldName]: ObjectField | NodeField | ConnectionField | NodeListField;
+  [key: FieldName]:
+  | ObjectField
+  | NodeField
+  | ConnectionField
+  | NodeListField;
 };
 
 type SubscriptionOperation = MutationOperation;
@@ -100,7 +107,7 @@ type Fragment = {
   | ConnectionField
   | NodeListField;
 } & {
-  __variables?: Record<string, ReturnType<typeof withScalar>>;
+  __variables?: Record<string, ReturnType<typeof variable>>;
   __fragmentName: string;
 } & DirectivesProps;
 
@@ -138,6 +145,15 @@ type Expectation = {
     }
   );
 
+type OperationBuilder = (type: OperationType, operation: QueryOperation | MutationOperation | SubscriptionOperation) => ConfiguredOperationHandler;
+
+type OperationHandler = (composer: Composer) => string;
+
+type ConfiguredOperationHandler = OperationHandler & {
+  isComposer: boolean,
+  operationName: string
+}
+
 export type {
   QueryField,
   ScalarField,
@@ -152,6 +168,10 @@ export type {
   SubscriptionOperation,
   FieldName,
   ComplexFieldProps,
-  Fragment
+  Fragment,
+  OperationBuilder,
+  OperationHandler,
+  ConfiguredOperationHandler,
+  OperationType,
 };
 export { ExpectedType };

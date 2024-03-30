@@ -19,10 +19,10 @@
         "inlineSourceMap": true,
         "inlineSources": true,
         "types": []
-
     },
     "include": [
-        "src/**/*"
+        "src/**/*",
+        "examples"
     ],
     "exclude": [
         "node_modules",

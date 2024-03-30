@@ -1,6 +1,6 @@
 import { assert } from './assert';
 
-const withScalar = (
+const variable = (
   value: unknown,
   customScalar: string,
   nonNullable: boolean,
@@ -28,4 +28,4 @@ const withScalar = (
   return __configurationHandler;
 };
 
-export { withScalar };
+export { variable };

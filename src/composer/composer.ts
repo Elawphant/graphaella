@@ -3,20 +3,12 @@ import type { fromVariable } from './from-variable';
 import {
   type Directive,
   type Expectation,
-  type NodeListField,
-  type ObjectField,
   type QueryField,
   ExpectedType,
   type FieldName,
-  type ScalarField,
-  type NodeField,
-  type ConnectionField,
-  type ComplexFieldProps,
 } from './types';
-import { withScalar } from './with-scalar';
+import { variable } from './variable';
 
-type Level = number;
-type VariableIndex = number;
 
 type VariableName = string;
 
@@ -45,7 +37,7 @@ class Composer {
 
   private declare readonly operationVariables: Map<
     VariableName,
-    ReturnType<ReturnType<typeof withScalar>>
+    ReturnType<ReturnType<typeof variable>>
   >;
 
   constructor(operationName: string) {
@@ -261,7 +253,7 @@ class Composer {
           `'__params' must be declared using plain values or 'fromVariable' function`,
           (fromVariableFunctionOrValue as ReturnType<typeof fromVariable>).isComposer,
         );
-        const config = fromVariableFunctionOrValue(this.operationVariables) as ReturnType<ReturnType<typeof withScalar>>;
+        const config = fromVariableFunctionOrValue(this.operationVariables) as ReturnType<ReturnType<typeof variable>>;
         fieldParams.push(`${paramName}: $${config.variableName}`);
       } else {
         // allow for untyped variable definition via plain values, i.e. without variables
@@ -282,13 +274,13 @@ class Composer {
    * Registers an object mapping of declared and generated final naming and values;
    * @returns a piece of string representing operation variables
    */
-  public composeVariables = (
-    variables?: Record<string, ReturnType<typeof withScalar>>,
+  public variables = (
+    variables?: Record<string, ReturnType<typeof variable>>,
   ) => {
     assert(
-      `'__variables' must be declared using 'withScalar' function'`,
+      `'__variables' must be declared using 'variable' function'`,
       variables === undefined || (typeof variables === 'object' && !Array.isArray(variables) && Object.values(variables).every((handler) => {
-        return typeof handler === 'function' && (handler as ReturnType<typeof withScalar>).isComposer
+        return typeof handler === 'function' && (handler as ReturnType<typeof variable>).isComposer
       }))
     );
     const __variables = variables ?? {};
@@ -296,7 +288,7 @@ class Composer {
     Object.entries(__variables).forEach(([variableName, variableHandler]) => {
       const config = variableHandler(
         variableName,
-      ) as ReturnType<ReturnType<typeof withScalar>>;
+      ) as ReturnType<ReturnType<typeof variable>>;
       operationParams.push(`$${config.variableName}: ${config.scalarType}`);
       if (!this.operationVariables.has(variableName)) {
         this.operationVariables.set(variableName, config);
@@ -319,24 +311,20 @@ class Composer {
     directives?: Directive[],
   ) => {
     const __directives = directives ?? [];
-    assert(``, Array.isArray(__directives) && __directives.every(
+    assert(`Directives must be an array of Directive objects`, Array.isArray(__directives) && __directives.every(
       directive => typeof directive === 'object' && !Array.isArray(directive) && directive.name))
     const directivesList: string[] = [];
     __directives.forEach((directive) => {
+      const { name, args } = directive;
       directivesList.push(
-        `@${directive.name}(${directive.args && Object.keys(directive.args).length > 0
-          ? Object.entries(directive.args)
+        `@${name}(${args && Object.keys(args).length > 0
+          ? Object.entries(args)
             .map(([key, arg]) => {
               const __fromVariable = arg as ReturnType<typeof fromVariable>;
               if (
                 typeof __fromVariable === 'function' &&
-                __fromVariable.isComposer &&
                 __fromVariable.isComposer === true
               ) {
-                assert(
-                  `No variables specified for composing the directive '${key}'`,
-                  this.operationVariables.has(key),
-                );
                 return `${key}: $${__fromVariable(this.operationVariables).variableName}`;
               }
               return `${key}: ${typeof arg === 'string' ? `"${arg}"` : arg}`;

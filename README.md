@@ -2,6 +2,26 @@
 
 Small robust SDK for generating GraphQL queries.
 
+## Table of Contents
+
+- [Graphaella](#graphaella)
+  - [Table of Contents](#table-of-contents)
+  - [Features](#features)
+  - [Installation](#installation)
+  - [Usage example](#usage-example)
+  - [API](#api)
+    - [`compose`](#compose)
+    - [`operation`](#operation)
+    - [`variable`](#variable)
+    - [`fromVariable`](#fromvariable)
+    - [Expectation](#expectation)
+  - [Available flags](#available-flags)
+    - [Operation level](#operation-level)
+    - [Field level](#field-level)
+    - [Field level expectation related flags](#field-level-expectation-related-flags)
+  - [TODO](#todo)
+  - [License](#license)
+
 ## Features
 
 - Infers a clear api of expected from the server data allowing easy serialization capability for caching in ORMs and data managing libraries, like ember-data.
@@ -16,71 +36,81 @@ Small robust SDK for generating GraphQL queries.
 
 ## Installation
 
-coming soon
+Simply add the package to your repo and import from `src`.
+Installation via npm will be available soon.
 
-## Usage
+## Usage example
 
 Let's see the following example:
 
 ```ts
-import { compose, query, withScalar } from '@grapahaella/composer';
-import { request } from 'graphql-request';
+import { compose, query, variable } from 'graphaella';
 
-const {document, getExpectation } = compose(query(
-{
-  node: {
-    age: {
-      __alias: 'yearsLived' // aliased scalar field
-    },
-    friendsConnection: {
-      __toLocalType: 'user', // for serialization via expectation to local type
-      __alias: 'mates',
-      __variables: {
-        name__icontains: "John",
-        includeFriends: withScalar(true, 'Boolean', false) // passing typed variables
-      },
-      __connection: true, // for serialization via expectation to connection
-      __scalars: ['id', '__typename'],
-      __directives: [
-        {
-          name: 'include',
-          args: {
-            if: fromVariable('includeFriends') // select from typed variables
+const {document, getExpectation } = compose(query({
+  __operationName: 'UsersQuery',
+  __variables: {
+    token: variable('skajdhaskjdh-kjsdha-askdhsakldjh', 'String', true),
+    addedDate: variable(Date.now().toString(), 'Date', false),
+    includeFriends: variable(true, 'Boolean', false)
+  },
+  __directives: [
+    {
+      name: 'auth',
+      args: {
+        token: fromVariable('token')
+      }
+    }
+  ],
+  users: {
+    __connection: true,
+    edges: {
+      node: {
+        __toLocalType: 'User',
+        __scalars: ['id', 'name', 'email', '__typename'],
+        friendsConnection: {
+          __alias: 'recentFriends',
+          __params: {
+            addedDate: fromVariable('addedDate')
+          },
+          __directives: [
+            {
+              name: 'inlcude',
+              args: {
+                if: fromVariable('includeFriends')
+              }
+            }
+          ],
+          edges: {
+            node: {
+              __scalars: ['id', 'name', 'email', '__typename'],
+            },
+            __scalars: ['cursor']
+          },
+          pageInfo: {
+            __scalars: ['hasNextPage', 'hasPreviousPage'],
           }
         }
-      ]
-    },
-    __scalars: ['id', '__typename'],
-    __variables: {
-        id: withScalar('lkasjdLKSAD12klajsda', 'ID', true),
-    },
-    __alias: "userNode",
-    __toLocalType: 'user',
-    },
-    __operationName: 'UserQuery' // ability to customize operation name
+      }
+    }
   }
-));
+}));
 ```
 
 will return:
 
-```ts
+```json
 {
-  operationName: "UserQuery",
-  query: `query UserQuery ($id1_1: ID!, $includeFriends2_3: Boolean)  {
-    userNode: node (id: $id1_1)  { 
-      id 
-      __typename 
-      yearsLived: age 
-      mates: friends (name__icontains: "John", includeFriends: $includeFriends2_3) @include(if: $includeFriends2_3) { 
-        id 
-        __typename  
-      } 
-    }
-  }`,
-  variables: {id1_1: "lkasjdLKSAD12klajsda", includeFriends2_3: true}
+  "operationName": "UserQuery",
+  "query": "query UsersQuery ($token: String!, $addedDate: Date, $includeFriends: Boolean) @auth(token: $token) {   users   {   edges   {   node   { id name email __typename  recentFriends: friendsConnection (addedDate: $addedDate) @inlcude(if: $includeFriends) {   edges   { cursor  node   { id name email __typename  } }  pageInfo   { hasNextPage hasPreviousPage  } } } } } }",
+  "variables": {
+    "token": "skajdhaskjdh-kjsdha-askdhsakldjh", 
+    "addedDate": "1711795343609", 
+    "includeFriends": true
+  }
 }
 ```
+
+For more examples see operations.ts in `examples` folder.
 
 ## API
 
@@ -90,71 +120,77 @@ Offers following tools for GraphQL generation
 
 Main composer function and starting point for document generation. It sets up a composer, and scrambles GraphQl source document.
 
-### `query`
+### `operation`
 
-Used as argument to `compose`, essentially wraps the passed declaration object into a query operation with respective operation variables and possible directives.
+Used as argument to `compose`, essentially wraps the passed declaration object into a query, mutation or subscription operation with respective operation variables and possible directives. accepts two arguments, the type of the operation (`query`, `mutation` or `subscription`) and the `operation` object.
 
-### `mutation`
+### `variable`
 
-Used as argument to `compose`, essentially wraps the passed declaration object into a mutation operation with respective operation variables and possible directives.
+A function to declare a typed operation variables and programmatically map them to the queryParams or input. Has 3 arguments: `(value: unknown, scalarTypeName: string, non_nullable: boolean)`. scalarTypeName is the string representation of the scalar type.
 
-### `subscription`
+### `fromVariable`
 
-Used as argument to `compose`, essentially wraps the passed declaration object into a subscription operation with respective operation variables and possible directives.
-
-### `withScalar`
-
-A helper function to declare a typed operation variables and programmatically map them to the queryParams or input. Has 3 arguments: `(value: unknown, scalarTypeName: string | Object, non_nullable: boolean)`. scalarTypeName can be a string or a custom `Object`: n.b. if `scalarTypeName` is a custom class its `constructor.name` will be used for string representation.
-
-### `fromVariables`
-
-A helper function that accepts the variable name and uses the __variables declared on current level to properly map the variable name.
+A function that accepts the variable name and uses the __variables declared on current level to properly map the variable name.
 
 ### Expectation
 
-An expectation object has following type:
+An expectation object has following type signature:
 
 ```ts
 type Expectation = {
-  responseKey: string; // the key on response: e.g. the aliased field if it is aliased
-  key: FieldName; // the actual key on schema
-  path: (string | '#')[]; // for easy path retrival on response, if needed; '#' serves as indicator of a index of an array 
-  level: number; // nesting level, useful for serialization
+  responseKey: string; // the key on response: i.e. dataKey or alias
+  key: FieldName; // the actual key
+  path: (string | '#')[]; // for easy error retrival on response // TODO: DEPRECATE, was not necessary in serializer
+  level: number;
   alias?: string;
 } & (
-  | {
+    | {
       type: ExpectedType.node;
       localTypeName: string;
-      variables?: Record<string, ReturnType<typeof withScalar>>;
-    }
-  | {
+      params?: Record<string, unknown | ReturnType<typeof fromVariable>>;
+    } | {
       type: ExpectedType.connection;
       localTypeName: string;
-      variables?: Record<string, ReturnType<typeof withScalar>>;
-    }
-  | {
+      params?: Record<string, unknown | ReturnType<typeof fromVariable>>;
+    } | {
       type: ExpectedType.edges;
       localTypeName: string;
-      variables?: Record<string, ReturnType<typeof withScalar>>;
-    }
-  | {
-      type: ExpectedType.nodeList; // for responses with flat collections
+      params?: Record<string, unknown | ReturnType<typeof fromVariable>>;
+    } | {
+      type: ExpectedType.nodeList;
       localTypeName: string;
-      variables?: Record<string, ReturnType<typeof withScalar>>;
-    }
-  | {
+      params?: Record<string, unknown | ReturnType<typeof fromVariable>>;
+    } | {
       type: ExpectedType.record;
-      variables?: Record<string, ReturnType<typeof withScalar>>;
-    }
-  | {
+      params?: Record<string, unknown | ReturnType<typeof fromVariable>>;
+    } | {
       type: ExpectedType.scalar;
-      localTypeName: string; // the __typename of local schema, essentially allowing to map server side schema to a different client-side schema
+      localTypeName: string;
+    } | {
+      type: ExpectedType.negligible;
     }
-  | {
-      type: ExpectedType.negligible; // the dev may neglect the return type, useful e.g. for login or logout fields
-    }
-);
+  );
 ```
+
+## Available flags
+
+### Operation level
+
+- `__operationName`: allows customizing of the operation name will default to empty string.
+- `__variables`: an object containing a key value pair of variables, where values are declared using 'variable' function.
+- `__diretcives`: an array containing directive objects: a directive object must have a 'name' and may have 'args' object.
+
+### Field level
+
+- `__directives`: same as operation level directives.
+- `__alias`: a field alias.
+- `__scalars`: an array of field names to be included; as in GraphQL they need to be explicitly defined.
+- `__params`: an object containing field params;
+
+### Field level expectation related flags
+
+- `__toLocalType`: allows defining a typename on the expectation object for later usage in serialization. This can be used for easy mapping of the response to the client side different schema independently from server-side '__typename'.
+- `__node`, `__list`, `__connection`: allows to declarativly specify the expected structure type. `__list` is for fields that return flat array of nodes.
 
 ## TODO
 
