@@ -2,7 +2,7 @@ import { assert } from './assert';
 
 const withScalar = (
   value: unknown,
-  customScalar: string | Object,
+  customScalar: string,
   nonNullable: boolean,
 ) => {
   const __configurationHandler = (
@@ -13,18 +13,12 @@ const withScalar = (
       !customScalar ||
         (customScalar &&
           typeof customScalar === 'string' &&
-          !customScalar.includes('!')) ||
-        (customScalar &&
-          typeof customScalar === 'object' &&
-          !customScalar.constructor.name.includes('!')),
+          !customScalar.includes('!')),
     );
     const nonNull = nonNullable ? '!' : '';
     return {
       variableName: variableName,
-      scalarType:
-        typeof customScalar === 'string'
-          ? `${customScalar}${nonNull}`
-          : `${customScalar.constructor.name}${nonNull}`,
+      scalarType:`${customScalar}${nonNull}`,
       value: value,
     };
   };

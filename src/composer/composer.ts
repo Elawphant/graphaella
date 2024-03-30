@@ -74,15 +74,10 @@ class Composer {
     level: number,
     enforceLocalType?: string,
   ): string => {
-    assert(
-      `Fields must be declared via objects or using '__scalars'`,
-      typeof field === 'object' && !Array.isArray(field),
-    );
-
     const {
       __alias,
-      __connection, 
-      __directives, 
+      __connection,
+      __directives,
       __edges, // ??
       __list,
       __node,
@@ -100,7 +95,15 @@ class Composer {
       __params?: Record<string, unknown | ReturnType<typeof fromVariable>>;
       __toLocalType?: string;
       __scalars?: FieldName[];
-    } & {[key: string]: QueryField}; // ok for dasherized fields to be undefined
+    } & { [key: string]: QueryField }; // ok for dasherized fields to be undefined
+    assert(
+      `Fields must be declared via objects or using '__scalars'`,
+      typeof fields === 'object' && !Array.isArray(fields),
+    );
+    assert(
+      `No fields are declared at '${path.join('.')}'.`, 
+      fields || __scalars
+    );
 
     const responseKey = __alias ? __alias : key;
     const __path =
@@ -175,9 +178,6 @@ class Composer {
       alias: __alias,
       params: __params as Record<string, unknown | ReturnType<typeof fromVariable>>,
     });
-
-    // TODO: add directives
-    // resolve queryParams
     if (
       Object.keys(ExpectedType)
         .filter(
@@ -191,30 +191,30 @@ class Composer {
       assert(
         ` '__scalars must be a list of strings'`,
         __scalars === undefined ||
-          (Array.isArray(__scalars) &&
-            __scalars.every((i) => typeof i === 'string')),
+        (Array.isArray(__scalars) &&
+          __scalars.every((i) => typeof i === 'string')),
       );
       const params = this.composeParams(__params);
 
       const nestedFields =
         Object.keys(fields).length > 0
           ? Object.entries(fields as Record<string, QueryField>)
-              .map(([fieldName, declaration]) => {
-                return this.resolveFields(
-                  fieldName,
-                  declaration,
-                  __path,
-                  level + 1,
-                  [
-                    ExpectedType.connection,
-                    ExpectedType.edges,
-                    ExpectedType.nodeList,
-                  ].includes(expectationType)
-                    ? __toLocalType
-                    : undefined,
-                );
-              })
-              .join(' ')
+            .map(([fieldName, declaration]) => {
+              return this.resolveFields(
+                fieldName,
+                declaration,
+                __path,
+                level + 1,
+                [
+                  ExpectedType.connection,
+                  ExpectedType.edges,
+                  ExpectedType.nodeList,
+                ].includes(expectationType)
+                  ? __toLocalType
+                  : undefined,
+              );
+            })
+            .join(' ')
           : '';
 
       // leave indentations as is
@@ -272,7 +272,7 @@ class Composer {
         fieldParams.push(`${paramName}: ${finalValue}`);
       };
     });
-    return params ? `(${fieldParams.join(', ')})` :'';
+    return params ? `(${fieldParams.join(', ')})` : '';
   }
 
 
@@ -287,22 +287,22 @@ class Composer {
   ) => {
     assert(
       `'__variables' must be declared using 'withScalar' function'`,
-      !variables || (typeof variables === 'object' && !Array.isArray(variables) && Object.values(variables).every((handler) => {
-        typeof handler === 'function' && (handler as ReturnType<typeof withScalar>).isComposer
+      variables === undefined || (typeof variables === 'object' && !Array.isArray(variables) && Object.values(variables).every((handler) => {
+        return typeof handler === 'function' && (handler as ReturnType<typeof withScalar>).isComposer
       }))
     );
     const __variables = variables ?? {};
     const operationParams: string[] = [];
     Object.entries(__variables).forEach(([variableName, variableHandler]) => {
-        const config = variableHandler(
-          variableName,
-        ) as ReturnType<ReturnType<typeof withScalar>>;
-        operationParams.push(`$${config.variableName}: $${config.scalarType}`);
-        if (!this.operationVariables.has(variableName)){
-          this.operationVariables.set(variableName, config);
-        };
+      const config = variableHandler(
+        variableName,
+      ) as ReturnType<ReturnType<typeof withScalar>>;
+      operationParams.push(`$${config.variableName}: ${config.scalarType}`);
+      if (!this.operationVariables.has(variableName)) {
+        this.operationVariables.set(variableName, config);
+      };
     });
-    return variables ? operationParams.join(', ') : '';
+    return variables ? `(${operationParams.join(', ')})` : '';
   };
 
   /** Returns an object of variables and inputs to be submitted in graphql request */
@@ -324,26 +324,25 @@ class Composer {
     const directivesList: string[] = [];
     __directives.forEach((directive) => {
       directivesList.push(
-        `@${directive.name}(${
-          directive.args && Object.keys(directive.args).length > 0
-            ? Object.entries(directive.args)
-                .map(([key, arg]) => {
-                  const __fromVariable = arg as ReturnType<typeof fromVariable>;
-                  if (
-                    typeof __fromVariable === 'function' &&
-                    __fromVariable.isComposer &&
-                    __fromVariable.isComposer === true
-                  ) {
-                    assert(
-                      `No variables specified for composing the directive '${key}'`,
-                      this.operationVariables.has(key),
-                    );
-                    return `${key}: $${__fromVariable(this.operationVariables).variableName}`;
-                  }
-                  return `${key}: ${typeof arg === 'string' ? `"${arg}"` : arg}`;
-                })
-                .join(', ')
-            : ''
+        `@${directive.name}(${directive.args && Object.keys(directive.args).length > 0
+          ? Object.entries(directive.args)
+            .map(([key, arg]) => {
+              const __fromVariable = arg as ReturnType<typeof fromVariable>;
+              if (
+                typeof __fromVariable === 'function' &&
+                __fromVariable.isComposer &&
+                __fromVariable.isComposer === true
+              ) {
+                assert(
+                  `No variables specified for composing the directive '${key}'`,
+                  this.operationVariables.has(key),
+                );
+                return `${key}: $${__fromVariable(this.operationVariables).variableName}`;
+              }
+              return `${key}: ${typeof arg === 'string' ? `"${arg}"` : arg}`;
+            })
+            .join(', ')
+          : ''
         })`,
       );
     });
