@@ -48,12 +48,12 @@ import type { OperationType, OperationHandler, QueryOperation, OperationBuilder 
  * ```
  */
 const operation: OperationBuilder = (type: OperationType, operation: QueryOperation) => {
-  const ____handler: OperationHandler = (composer: Composer) => {
+  const __handler: OperationHandler = (composer: Composer) => {
 
     return handleOperation(type, operation, composer)
   };
 
-  return configureHandler(____handler, operation?.__operationName ?? '');
+  return configureHandler(__handler, operation?.__operationName ?? '');
 };
 
 export { operation };

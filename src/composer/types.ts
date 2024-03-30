@@ -33,46 +33,48 @@ type AliasProps = {
 
 type ScalarField = {} | AliasProps | DirectivesProps;
 
-type ComplexFieldProps = {
+type ComplexFieldProps<T extends string> = {
+  __typename?: T
   __scalars?: FieldName[];
   __params?: Record<string, unknown | ReturnType<typeof fromVariable>>;
+  __fragmentNames?: Fragment<T>['__fragmentName'][]
 } | {};
 
 type ToLocalTypeProps = {
   __toLocalType?: string;
 } | {}
 
-type ObjectField = {
+type ObjectField<T extends string> = {
   [key in string]:
   | ScalarField
-  | ObjectField
-  | NodeField
-  | ConnectionField
-  | NodeListField
+  | ObjectField<T>
+  | NodeField<T>
+  | ConnectionField<T>
+  | NodeListField<T>
   | undefined;
-} & AliasProps & DirectivesProps & ComplexFieldProps;
+} & AliasProps & DirectivesProps & ComplexFieldProps<T>;
 
-type NodeField = {
+type NodeField<T extends string> = {
   __node: boolean;
-} & ObjectField & ToLocalTypeProps;
+} & ObjectField<T> & ToLocalTypeProps;
 
-type ConnectionField = {
+type ConnectionField<T extends string> = {
   __connection: boolean;
-  edges?: ObjectField | NodeListField;
+  edges?: ObjectField<T> | NodeListField<T>;
 } & {
-    [key in string]?: ObjectField;
-  } & AliasProps & DirectivesProps & ComplexFieldProps & ToLocalTypeProps;
+    [key in string]?: ObjectField<T>;
+  } & AliasProps & DirectivesProps & ComplexFieldProps<T> & ToLocalTypeProps;
 
-type NodeListField = {
+type NodeListField<T extends string> = {
   __list: boolean;
-} & ObjectField & ToLocalTypeProps;
+} & ObjectField<T> & ToLocalTypeProps;
 
 type QueryField =
   | ScalarField
-  | ObjectField
-  | NodeField
-  | ConnectionField
-  | NodeListField;
+  | ObjectField<string>
+  | NodeField<string>
+  | ConnectionField<string>
+  | NodeListField<string>;
 
 
 type OperationBase = {
@@ -83,32 +85,33 @@ type OperationBase = {
 type QueryOperation = OperationBase & {
   [key: FieldName]:
   | ScalarField
-  | ObjectField
-  | NodeField
-  | ConnectionField
-  | NodeListField;
+  | ObjectField<string>
+  | NodeField<string>
+  | ConnectionField<string>
+  | NodeListField<string>;
 };
 
 type MutationOperation = OperationBase & {
   [key: FieldName]:
-  | ObjectField
-  | NodeField
-  | ConnectionField
-  | NodeListField;
+  | ObjectField<string>
+  | NodeField<string>
+  | ConnectionField<string>
+  | NodeListField<string>;
 };
 
 type SubscriptionOperation = MutationOperation;
 
-type Fragment = {
+type Fragment<T extends string> = {
   [key: FieldName]:
   | ScalarField
-  | ObjectField
-  | NodeField
-  | ConnectionField
-  | NodeListField;
+  | ObjectField<T>
+  | NodeField<T>
+  | ConnectionField<T>
+  | NodeListField<T>;
 } & {
-  __variables?: Record<string, ReturnType<typeof variable>>;
+  __params?: Record<string, unknown | ReturnType<typeof fromVariable>>;
   __fragmentName: string;
+  __typename: T;
 } & DirectivesProps;
 
 type Expectation = {
