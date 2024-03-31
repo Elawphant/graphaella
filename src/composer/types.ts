@@ -2,6 +2,7 @@ import type { variable } from './variable';
 import type { fromVariable } from './from-variable';
 import type { Composer } from './composer';
 
+
 enum ExpectedType {
   node = 'node',
   nodeList = 'nodeList',
@@ -37,7 +38,7 @@ type ComplexFieldProps<T extends string> = {
   __typename?: T
   __scalars?: FieldName[];
   __params?: Record<string, unknown | ReturnType<typeof fromVariable>>;
-  __fragmentNames?: Fragment<T>['__fragmentName'][]
+  __fragments?: Fragment<T>['__fragmentName'][]
 } | {};
 
 type ToLocalTypeProps = {
@@ -109,10 +110,11 @@ type Fragment<T extends string> = {
   | ConnectionField<T>
   | NodeListField<T>;
 } & {
-  __params?: Record<string, unknown | ReturnType<typeof fromVariable>>;
   __fragmentName: string;
   __typename: T;
-} & DirectivesProps;
+  __scalars?: FieldName[];
+  __fragments?: Fragment<T>['__fragmentName'][]
+};
 
 type Expectation = {
   responseKey: string; // the key on response: i.e. dataKey or alias
@@ -155,6 +157,7 @@ type OperationHandler = (composer: Composer) => string;
 type ConfiguredOperationHandler = OperationHandler & {
   isComposer: boolean,
   operationName: string
+  isFragment?: false
 }
 
 export type {

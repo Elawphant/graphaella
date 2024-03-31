@@ -28,7 +28,9 @@ const handleOperation = (
     tree += ' ' + composer.resolveFields(key, field, [], level + 1);
   });
 
-  return `${operationType} ${composer.operationName} ${operationVariables} ${composer.composeDirectives(__directives as Directive[] | undefined)} { ${tree} }`;
+  const op = `${operationType} ${composer.operationName} ${operationVariables} ${composer.composeDirectives(__directives as Directive[] | undefined)} { ${tree} }`;
+
+  return `${composer.composeIncludedFragments()} ${op}`
 };
 
 

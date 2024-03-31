@@ -1,26 +1,45 @@
-import type { OperationBuilder } from '..';
+import { variable, type ConfiguredOperationHandler, type OperationBuilder } from '..';
+import { assert } from './assert';
 import { Composer } from './composer';
+import { fragment } from './fragment';
 
 /**
- * Main function for generating a GraphQL source document.
- * Accepts `query`, `mutation` or `subscription` function instances and produces an object with
- * graphql request object and a funtion to retrive the expectations if needed
- *
+ * Main function for generating a GraphQL source documents. supports batching if multiple operations are passed
+ * Accepts `operation` and `fragment` function instances and produces an object with
+ * graphql request object and a method to retrive the expectations if needed
  * */
 const compose = (
-  composable: ReturnType<OperationBuilder>,
+  ...composables: (ReturnType<OperationBuilder> | ReturnType<typeof fragment>)[]
 ) => {
-  const composer = new Composer(composable.operationName);
-  const requestable = {
-    operationName: composable.operationName,
-    query: composable(composer),
-    variables: composer.getRequestVariables(),
-  };
+  const operations: ReturnType<OperationBuilder>[] = [];
+  const fragments: ReturnType<typeof fragment>[] = [];
+  composables.forEach(handler => {
+    if (handler?.isFragment){
+      fragments.push(handler);
+    } else {
+      operations.push(handler as ConfiguredOperationHandler);
+    }
+  });
+  const requestables: {
+    document: Record<string, unknown>,
+    getExpectation: Composer['getExpectation'],
+}[] = [];
+  operations.forEach(op => {
+    const composer = new Composer(op.operationName);
+    fragments.forEach(fr => fr(composer));
+    const doc = {
+      operationName: composer.operationName,
+      query: op(composer).replace(/\s+/g, ' ').trim(),
+      variables: JSON.stringify(composer.getRequestVariables()),
+    };
+    requestables.push({
+      document: doc,
+      getExpectation: composer.getExpectation
+    });
+  });
 
-  return {
-    document: JSON.stringify(requestable),
-    getExpectation: composer.getExpectation.bind(composer),
-  };
+  return requestables;
+
 };
 
 export { compose };

@@ -1,68 +1,24 @@
+import { assert } from './assert';
 import type { Composer } from './composer';
-import type { QueryOperation } from './types';
+import type { Fragment } from './types';
 
 /**
  * A function for generating a fragment GraphQL source documents
- * e.g.
- * ```ts
- * import { fragment } from '@graphaella';
- *
- * compose(fragment{
- *   node: {
- *     age: {
- *       __alias: 'yearsLived'
- *     },
- *     friends: {
- *       __toLocalType: 'user',
- *       __alias: 'pals',
- *       __queryParams: {
- *         name__icontains: "John",
- *         includeFriends: variable(true, 'Boolean', false)
- *       },
- *       __connection: true,
- *       __scalars: ['id', '__typename'],
- *       __directives: [
- *         {
- *           name: 'include',
- *           args: {
- *             if: fromVariable('includeFriends')
- *           }
- *         }
- *       ]
- *     },
- *     __scalars: ['id', '__typename'],
- *     __queryParams: {
- *       id: variable(1, 'ID', true),
- *     },
- *     __alias: "userNode",
- *     __toLocalType: 'user',
- *   },
- *   __operationName: 'UserQuery'
- * }));
- * ```
  */
-const fragment = (operation: QueryOperation) => {
-  const { __variables, __fragmentName, ...query } =
-    operation;
-  const level = 0;
+const fragment = <T extends string>(fragment: Fragment<T>) => {
+  const { __fragmentName, __typename, ...fields } =
+    fragment;
+  assert(`Fragments must have string names defined via '__fragmentName'`, __fragmentName && typeof __fragmentName === 'string');
+  assert(`Fragments must have string types defined via '__typename'`, __typename && typeof __typename === 'string');
 
-  const __fragment = (composer: Composer) => {
-
-    let tree = '';
-
-    // compose variables first to register them for access inside the tree
-    const operationVariables = composer.variables(__variables);
-
-    // TODO: Fragments should be parsed to expectations differently
-    // Object.entries(query).forEach(([key, field]) => {
-    //   tree += ' ' + composer.resolveFields(key, field, [], level + 1);
-    // });
-    return `fragment ${composer.operationName} ${operationVariables}} { ${tree} }`;
+  const __handler = (composer: Composer) => {
+    composer.registerFragment(fragment);
   };
 
-  __fragment.isComposer = true;
-  __fragment.fragmentName = __fragmentName ?? 'Fragment';
-  return __fragment;
+  __handler.isComposer = true;
+  __handler.fragmentName = __fragmentName;
+  __handler.isFragment = true;
+  return __handler;
 };
 
 export { fragment };

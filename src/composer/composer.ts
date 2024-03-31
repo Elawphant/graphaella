@@ -6,6 +6,7 @@ import {
   type QueryField,
   ExpectedType,
   type FieldName,
+  type Fragment,
 } from './types';
 import { variable } from './variable';
 
@@ -35,6 +36,10 @@ class Composer {
 
   private declare lastVariableIndex: number;
 
+  private declare readonly fragments: Map<Fragment<string>['__fragmentName'], Fragment<string>>;
+
+  private declare fragmentsToInclude: Map<Fragment<string>['__fragmentName'], string>;
+
   private declare readonly operationVariables: Map<
     VariableName,
     ReturnType<ReturnType<typeof variable>>
@@ -44,6 +49,8 @@ class Composer {
     this.operationName = operationName;
     this.expectations = new Map();
     this.operationVariables = new Map();
+    this.fragments = new Map();
+    this.fragmentsToInclude = new Map();
     this.lastVariableIndex = 0;
   }
 
@@ -65,7 +72,107 @@ class Composer {
     path: string[],
     level: number,
     enforceLocalType?: string,
+    registerExpectations: boolean = true,
   ): string => {
+    const {
+      __alias,
+      __connection,
+      __directives,
+      __edges, // ??
+      __list,
+      __node,
+      __params,
+      __toLocalType,
+      __scalars,
+      __fragments,
+      ...fields
+    } = field as {
+      __alias?: string;
+      __connection?: boolean;
+      __directives?: Directive[];
+      __edges?: boolean;
+      __list?: boolean;
+      __node?: boolean;
+      __params?: Record<string, unknown | ReturnType<typeof fromVariable>>;
+      __toLocalType?: string;
+      __fragments?: Fragment<string>['__fragmentName'][]
+      __scalars?: FieldName[];
+    } & { [key: string]: QueryField }; // ok for dasherized fields to be undefined
+    assert(
+      `Fields must be declared via objects or using '__scalars'`,
+      typeof fields === 'object' && !Array.isArray(fields),
+    );
+    assert(
+      `No fields are declared at '${path.join('.')}'.`,
+      fields || __scalars
+    );
+
+    const expectation = this.registerExpectation(key, field, path, level, enforceLocalType);
+
+    if (
+      Object.keys(ExpectedType)
+        .filter(
+          (k) =>
+            ![ExpectedType.negligible, ExpectedType.scalar].includes(
+              k as ExpectedType,
+            ),
+        )
+        .includes(expectation.type)
+    ) {
+      assert(
+        `'__scalars must be an array of strings'`,
+        __scalars === undefined ||
+        (Array.isArray(__scalars) &&
+          __scalars.every((i) => typeof i === 'string')),
+      );
+      assert(
+        `'__fragments' must be an array of fragment names`,
+        __fragments === undefined ||
+        (Array.isArray(__fragments) &&
+          __fragments.every((i) => typeof i === 'string'))
+      );
+
+      const fragmentSpreads = __fragments?.map(name => this.composeFragmentSpread(name, path, level, enforceLocalType)).join(' ') ?? '';
+
+      const params = this.composeParams(__params);
+
+      const nestedFields =
+        Object.keys(fields).length > 0
+          ? Object.entries(fields as Record<string, QueryField>)
+            .map(([fieldName, declaration]) => {
+              return this.resolveFields(
+                fieldName,
+                declaration,
+                expectation.path,
+                level + 1,
+                [
+                  ExpectedType.connection,
+                  ExpectedType.edges,
+                  ExpectedType.nodeList,
+                ].includes(expectation.type)
+                  ? __toLocalType
+                  : undefined,
+              );
+            })
+            .join(' ')
+          : '';
+
+      // leave indentations as is
+      return ` ${this.resolveFieldNaming(key, __alias)} ${params} ${this.composeDirectives(__directives)} { ${__scalars ? __scalars.join(' ') : ''} ${fragmentSpreads} ${nestedFields} }`;
+    } else {
+      return ' ' + this.resolveFieldNaming(key, __alias);
+    }
+  };
+
+
+  /** Internal method that saves the expectation for later usage */
+  private registerExpectation = (
+    key: string,
+    field: QueryField,
+    path: string[],
+    level: number,
+    enforceLocalType?: string,
+  ) => {
     const {
       __alias,
       __connection,
@@ -88,14 +195,6 @@ class Composer {
       __toLocalType?: string;
       __scalars?: FieldName[];
     } & { [key: string]: QueryField }; // ok for dasherized fields to be undefined
-    assert(
-      `Fields must be declared via objects or using '__scalars'`,
-      typeof fields === 'object' && !Array.isArray(fields),
-    );
-    assert(
-      `No fields are declared at '${path.join('.')}'.`, 
-      fields || __scalars
-    );
 
     const responseKey = __alias ? __alias : key;
     const __path =
@@ -158,9 +257,9 @@ class Composer {
       default:
         expectationType = ExpectedType.negligible;
         break;
-    }
+    };
 
-    this.registerExpectation({
+    const expectation = {
       responseKey: responseKey,
       key: key,
       path: __path,
@@ -169,57 +268,11 @@ class Composer {
       localTypeName: enforceLocalType ?? (__toLocalType as string), // expected also undefined, but safe to cast
       alias: __alias,
       params: __params as Record<string, unknown | ReturnType<typeof fromVariable>>,
-    });
-    if (
-      Object.keys(ExpectedType)
-        .filter(
-          (k) =>
-            ![ExpectedType.negligible, ExpectedType.scalar].includes(
-              k as ExpectedType,
-            ),
-        )
-        .includes(expectationType)
-    ) {
-      assert(
-        ` '__scalars must be a list of strings'`,
-        __scalars === undefined ||
-        (Array.isArray(__scalars) &&
-          __scalars.every((i) => typeof i === 'string')),
-      );
-      const params = this.composeParams(__params);
+    };
 
-      const nestedFields =
-        Object.keys(fields).length > 0
-          ? Object.entries(fields as Record<string, QueryField>)
-            .map(([fieldName, declaration]) => {
-              return this.resolveFields(
-                fieldName,
-                declaration,
-                __path,
-                level + 1,
-                [
-                  ExpectedType.connection,
-                  ExpectedType.edges,
-                  ExpectedType.nodeList,
-                ].includes(expectationType)
-                  ? __toLocalType
-                  : undefined,
-              );
-            })
-            .join(' ')
-          : '';
-
-      // leave indentations as is
-      return ` ${this.resolveFieldNaming(key, __alias)} ${params} ${this.composeDirectives(__directives)} { ${__scalars ? __scalars.join(' ') : ''} ${nestedFields} }`;
-    } else {
-      return ' ' + this.resolveFieldNaming(key, __alias);
-    }
-  };
-
-  /** Internal method that saves the expectation for later usage */
-  registerExpectation = (expectation: Expectation) => {
-    const key = `${expectation.responseKey}:${expectation.level}` as `${Expectation['responseKey']}:${Expectation['level']}`;
-    this.expectations.set(key, expectation);
+    const expectationKey = `${expectation.responseKey}:${expectation.level}` as `${Expectation['responseKey']}:${Expectation['level']}`;
+    this.expectations.set(expectationKey, expectation);
+    return this.expectations.get(expectationKey)!
   };
 
   /** Given key on response object and nesting level, returns the appropriate expectation object */
@@ -352,6 +405,49 @@ class Composer {
   public getExpectations = () => {
     return this.expectations;
   };
+
+  /** Registers single fragment with the composer instance */
+  public registerFragment = <T extends string>(fragment: Fragment<T>) => {
+    assert(`Duplicate fragment names are not allowed`, !this.fragments.has(fragment.__fragmentName));
+    this.fragments.set(fragment.__fragmentName, fragment);
+  };
+
+  /** Returns a spread of block fragment, while composing a fragment and adding to fragments to be included in the final document */
+  private composeFragmentSpread = (
+    fragmentName: Fragment<string>['__typename'],
+    path: string[],
+    level: number,
+    enforceLocalType?: string,
+  ): string => {
+    assert(`No fragment named ${fragmentName} was found.`, this.fragments.has(fragmentName));
+    const { __typename, __fragmentName, __scalars, __fragments, ...fields } = this.fragments.get(fragmentName)!;
+    // handle fields with expectation registration
+    let tree = '';
+    tree += __scalars ? __scalars.join(' ') : '';
+    // allow nesting fragments
+    assert(
+      `'__fragments' must be an array of fragment names`,
+      __fragments === undefined ||
+      (Array.isArray(__fragments) &&
+        __fragments.every((i) => typeof i === 'string'))
+    );
+    if (__fragments){
+      assert(`'${fragmentName}' fragment spreads itself on the same level`, !__fragments.includes(fragmentName));
+    };
+    tree += __fragments ? __fragments.map(name => this.composeFragmentSpread(name, path, level, enforceLocalType)).join(' ') : '';
+    Object.entries(fields).forEach(([key, field]) => {
+      tree += this.resolveFields(key, field, path, level + 1, enforceLocalType);
+    });
+    // create and include a fragment declaration once for source query inclusion
+    if (!this.fragmentsToInclude.has(__fragmentName)) {
+      this.fragmentsToInclude.set(__fragmentName, `fragment ${__fragmentName} on ${__typename} { ${tree} }`)
+    };
+    return `...${fragmentName} on ${__typename}`;
+  };
+
+  public composeIncludedFragments = () => {
+    return [...this.fragmentsToInclude.values()].join(' ');
+  }
 }
 
 export { Composer };

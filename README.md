@@ -12,6 +12,7 @@ Small robust SDK for generating GraphQL queries.
   - [API](#api)
     - [`compose`](#compose)
     - [`operation`](#operation)
+    - [`fragment`](#fragment)
     - [`variable`](#variable)
     - [`fromVariable`](#fromvariable)
     - [Expectation](#expectation)
@@ -33,6 +34,7 @@ Small robust SDK for generating GraphQL queries.
 - supports typed variables
 - supports directives
 - no plugins or much configuration
+- supports generation of multiple operations for batching
 
 ## Installation
 
@@ -118,11 +120,15 @@ Offers following tools for GraphQL generation
 
 ### `compose`
 
-Main composer function and starting point for document generation. It sets up a composer, and scrambles GraphQl source document.
+Main composer function and starting point for document generation. It sets up a composer, and scrambles GraphQl source documents. Returns an array contianing operation objects; is batching ready;
 
 ### `operation`
 
 Used as argument to `compose`, essentially wraps the passed declaration object into a query, mutation or subscription operation with respective operation variables and possible directives. accepts two arguments, the type of the operation (`query`, `mutation` or `subscription`) and the `operation` object.
+
+### `fragment`
+
+Used as argument to `compose`, essentially composes a block fragment and makes it available to all operations of `compose`. In the operation `__fragments` flag can be used to list the fragment names to be included. Allows nesting fragments.
 
 ### `variable`
 
@@ -186,6 +192,7 @@ type Expectation = {
 - `__alias`: a field alias.
 - `__scalars`: an array of field names to be included; as in GraphQL they need to be explicitly defined.
 - `__params`: an object containing field params;
+- `__fragments`: an array containing the names of fragments to be used in the operation.
 
 ### Field level expectation related flags
 
@@ -194,10 +201,8 @@ type Expectation = {
 
 ## TODO
 
-- fragments
-- generator of queries, mutations and subscriptions from introspection
 - integration with newest ember-data
-- support for batching with compose
+- generator of queries, mutations and subscriptions from introspection
 - persisted generation of source and expectations
 
 ## License
