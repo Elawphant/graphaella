@@ -48,7 +48,7 @@ Let's see the following example:
 ```ts
 import { compose, query, variable } from 'graphaella';
 
-const {document, getExpectation } = compose(query({
+const { document, expectations } = compose(query({
   __operationName: 'UsersQuery',
   __variables: {
     token: variable('skajdhaskjdh-kjsdha-askdhsakldjh', 'String', true),

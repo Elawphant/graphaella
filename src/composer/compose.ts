@@ -22,7 +22,7 @@ const compose = (
   });
   const requestables: {
     document: Record<string, unknown>,
-    getExpectation: Composer['getExpectation'],
+    expectations: ReturnType<Composer['getExpectations']>,
 }[] = [];
   operations.forEach(op => {
     const composer = new Composer(op.operationName);
@@ -34,7 +34,7 @@ const compose = (
     };
     requestables.push({
       document: doc,
-      getExpectation: composer.getExpectation
+      expectations: composer.getExpectations()
     });
   });
 

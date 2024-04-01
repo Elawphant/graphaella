@@ -442,7 +442,7 @@ class Composer {
     if (!this.fragmentsToInclude.has(__fragmentName)) {
       this.fragmentsToInclude.set(__fragmentName, `fragment ${__fragmentName} on ${__typename} { ${tree} }`)
     };
-    return `...${fragmentName} on ${__typename}`;
+    return `...${fragmentName}`;
   };
 
   public composeIncludedFragments = () => {
