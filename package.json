@@ -6,13 +6,13 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "prepublishOnly": "npm run build",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "prepublishOnly": "npm run build"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://your-repository-url-here.git"
+    "url": "git+https://github.com/Elawphant/graphaella.git"
   },
+  "packageManager": "pnpm@8.15.5",
   "author": "Gevorg Hakobyan",
   "license": "MIT",
   "devDependencies": {
@@ -23,10 +23,14 @@
     "README.md"
   ],
   "keywords": [
-    "codegen", "GraphQL"
+    "codegen",
+    "GraphQL",
+    "graphaella"
   ],
   "dependencies": {
     "typescript": "^5.3.3"
-
+  },
+  "volta": {
+    "node": "20.12.0"
   }
 }

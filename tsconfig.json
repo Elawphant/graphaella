@@ -2,6 +2,7 @@
     "compilerOptions": {
         "target": "es2021",
         "module": "esnext",
+        "lib": ["es2021"],
         "moduleResolution": "bundler",
         "outDir": "./dist",
         "strict": true,
@@ -22,7 +23,6 @@
     },
     "include": [
         "src/**/*",
-        "examples"
     ],
     "exclude": [
         "node_modules",
