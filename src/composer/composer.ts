@@ -81,7 +81,7 @@ class Composer {
       __edges, // ??
       __list,
       __node,
-      __params,
+      __args,
       __toLocalType,
       __scalars,
       __fragments,
@@ -93,7 +93,7 @@ class Composer {
       __edges?: boolean;
       __list?: boolean;
       __node?: boolean;
-      __params?: Record<string, unknown | ReturnType<typeof fromVariable>>;
+      __args?: Record<string, unknown | ReturnType<typeof fromVariable>>;
       __toLocalType?: string;
       __fragments?: Fragment<string>['__fragmentName'][]
       __scalars?: FieldName[];
@@ -134,7 +134,7 @@ class Composer {
 
       const fragmentSpreads = __fragments?.map(name => this.composeFragmentSpread(name, path, level, enforceLocalType)).join(' ') ?? '';
 
-      const params = this.composeParams(__params);
+      const params = this.composeParams(__args);
 
       const nestedFields =
         Object.keys(fields).length > 0
@@ -180,7 +180,7 @@ class Composer {
       __edges, // ??
       __list,
       __node,
-      __params,
+      __args,
       __toLocalType,
       __scalars,
       ...fields
@@ -191,7 +191,7 @@ class Composer {
       __edges?: boolean;
       __list?: boolean;
       __node?: boolean;
-      __params?: Record<string, unknown | ReturnType<typeof fromVariable>>;
+      __args?: Record<string, unknown | ReturnType<typeof fromVariable>>;
       __toLocalType?: string;
       __scalars?: FieldName[];
     } & { [key: string]: QueryField }; // ok for dasherized fields to be undefined
@@ -242,14 +242,14 @@ class Composer {
       case __toLocalType === undefined &&
         enforceLocalType === undefined &&
         (Object.keys(fields).length > 0 ||
-          __params !== undefined ||
+          __args !== undefined ||
           __scalars !== undefined):
         expectationType = ExpectedType.record;
         break;
       // scalar field of node
       case (__toLocalType === undefined &&
         Object.keys(fields).length === 0 &&
-        __params === undefined &&
+        __args === undefined &&
         __scalars === undefined):
         expectationType = ExpectedType.scalar;
         break;
@@ -267,7 +267,7 @@ class Composer {
       type: expectationType,
       localTypeName: enforceLocalType ?? (__toLocalType as string), // expected also undefined, but safe to cast
       alias: __alias,
-      params: __params as Record<string, unknown | ReturnType<typeof fromVariable>>,
+      params: __args as Record<string, unknown | ReturnType<typeof fromVariable>>,
     };
 
     const expectationKey = `${expectation.responseKey}:${expectation.level}` as `${Expectation['responseKey']}:${Expectation['level']}`;
@@ -298,12 +298,12 @@ class Composer {
   private composeParams = (
     params?: Record<string, unknown | ReturnType<typeof fromVariable>>,
   ) => {
-    const __params = params ?? {};
+    const __args = params ?? {};
     const fieldParams: string[] = [];
-    Object.entries(__params).forEach(([paramName, fromVariableFunctionOrValue]) => {
+    Object.entries(__args).forEach(([paramName, fromVariableFunctionOrValue]) => {
       if (typeof fromVariableFunctionOrValue === 'function') {
         assert(
-          `'__params' must be declared using plain values or 'fromVariable' function`,
+          `'__args' must be declared using plain values or 'fromVariable' function`,
           (fromVariableFunctionOrValue as ReturnType<typeof fromVariable>).isComposer,
         );
         const config = fromVariableFunctionOrValue(this.operationVariables) as ReturnType<ReturnType<typeof variable>>;

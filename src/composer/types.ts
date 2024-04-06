@@ -37,7 +37,7 @@ type ScalarField = {} | AliasProps | DirectivesProps;
 type ComplexFieldProps<T extends string> = {
   __typename?: T
   __scalars?: FieldName[];
-  __params?: Record<string, unknown | ReturnType<typeof fromVariable>>;
+  __args?: Record<string, unknown | ReturnType<typeof fromVariable>>;
   __fragments?: Fragment<T>['__fragmentName'][]
 } | {};
 

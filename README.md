@@ -71,7 +71,7 @@ const { document, expectations } = compose(query({
         __scalars: ['id', 'name', 'email', '__typename'],
         friendsConnection: {
           __alias: 'recentFriends',
-          __params: {
+          __args: {
             addedDate: fromVariable('addedDate')
           },
           __directives: [
@@ -191,7 +191,7 @@ type Expectation = {
 - `__directives`: same as operation level directives.
 - `__alias`: a field alias.
 - `__scalars`: an array of field names to be included; as in GraphQL they need to be explicitly defined.
-- `__params`: an object containing field params;
+- `__args`: an object containing field params;
 - `__fragments`: an array containing the names of fragments to be used in the operation.
 
 ### Field level expectation related flags

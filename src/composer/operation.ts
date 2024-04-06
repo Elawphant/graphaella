@@ -22,7 +22,7 @@ import type { OperationType, OperationHandler, QueryOperation, OperationBuilder 
  *     friends: {
  *       __toLocalType: 'user',
  *       __alias: 'pals',
- *       __params: {
+ *       __args: {
  *         name__icontains: "John",
  *         age: fromVariables('friendAge')
  *       },
@@ -38,7 +38,7 @@ import type { OperationType, OperationHandler, QueryOperation, OperationBuilder 
  *       ]
  *     },
  *     __scalars: ['id', '__typename'],
- *     __params: {
+ *     __args: {
  *       id: fromVariables('userId'),
  *     },
  *     __alias: "userNode",

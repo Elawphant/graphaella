@@ -57,7 +57,7 @@ const QUERY = compose(operation('query', {
         __scalars: ['id', 'name', 'email', '__typename'],
         friendsConnection: {
           __alias: 'recentFriends',
-          __params: {
+          __args: {
             addedDate: fromVariable('addedDate')
           },
           __directives: [
@@ -106,7 +106,7 @@ const MUTATION = compose(operation('mutation', {
   },
   createReview: {
     __scalars: ['stars', 'commentary'],
-    __params: {
+    __args: {
       ep: fromVariable('ep'),
       review: fromVariable('review')
     }
@@ -135,7 +135,7 @@ const SUBSCRIPTION = compose(operation('subscription', {
     }, 'StoryLikeSubscribeInput', false)
   },
   storyLikeSubscribe: {
-    __params:{
+    __args:{
       input: fromVariable('input'),
     },
     story: {
