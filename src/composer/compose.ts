@@ -1,5 +1,4 @@
-import { variable, type ConfiguredOperationHandler, type OperationBuilder } from '..';
-import { assert } from './assert';
+import type { ConfiguredOperationHandler, OperationBuilder } from '..';
 import { Composer } from './composer';
 import { fragment } from './fragment';
 
@@ -22,7 +21,7 @@ const compose = (
   });
   const requestables: {
     document: Record<string, unknown>,
-    expectations: ReturnType<Composer['getExpectations']>,
+    composer: Composer,
 }[] = [];
   operations.forEach(op => {
     const composer = new Composer(op.operationName);
@@ -34,7 +33,7 @@ const compose = (
     };
     requestables.push({
       document: doc,
-      expectations: composer.getExpectations()
+      composer: composer
     });
   });
 

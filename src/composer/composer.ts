@@ -136,6 +136,11 @@ class Composer {
 
       const params = this.composeParams(__args);
 
+      const listTypes = new Set([
+        ExpectedType.connection,
+        ExpectedType.edges,
+        ExpectedType.nodeList]);
+
       const nestedFields =
         Object.keys(fields).length > 0
           ? Object.entries(fields as Record<string, QueryField>)
@@ -145,11 +150,7 @@ class Composer {
                 declaration,
                 expectation.path,
                 level + 1,
-                [
-                  ExpectedType.connection,
-                  ExpectedType.edges,
-                  ExpectedType.nodeList,
-                ].includes(expectation.type)
+                listTypes.has(expectation.type)
                   ? __toLocalType
                   : undefined,
               );
@@ -280,13 +281,6 @@ class Composer {
     return this.expectations.get(`${responseKey}:${level}`);
   };
 
-  // /** Returns a unique for composer variable suffix */
-  // private getNextVariableIndex = (
-  //   level: number,
-  // ): `${Level}_${VariableIndex}` => {
-  //   const index = (this.lastVariableIndex += 1);
-  //   return `${level}_${index}`;
-  // };
 
   /** Returns aliased or unaliased field piece for GraphQl source */
   private resolveFieldNaming = (key: string, alias?: string) => {
