@@ -6,11 +6,11 @@ import type { Composer } from "./composer";
 /**
  * Internal function that builds tree and operationVariables
  */
-const handleOperation = (
+function handleOperation(
   operationType: OperationType,
   operation: QueryOperation | MutationOperation | SubscriptionOperation,
   composer: Composer, 
-) => {
+) {
 
   const { __directives, __variables, __operationName, ...fields } = operation as (QueryOperation | MutationOperation | SubscriptionOperation);
   const level = 0;

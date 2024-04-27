@@ -7,9 +7,9 @@ import { fragment } from './fragment';
  * Accepts `operation` and `fragment` function instances and produces an object with
  * graphql request object and a method to retrive the expectations if needed
  * */
-const compose = (
+function compose(
   ...composables: (ReturnType<OperationBuilder> | ReturnType<typeof fragment>)[]
-) => {
+){
   const operations: ReturnType<OperationBuilder>[] = [];
   const fragments: ReturnType<typeof fragment>[] = [];
   composables.forEach(handler => {

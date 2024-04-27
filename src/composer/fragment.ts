@@ -5,7 +5,7 @@ import type { Fragment } from './types';
 /**
  * A function for generating a fragment GraphQL source documents
  */
-const fragment = <T extends string>(fragment: Fragment<T>) => {
+function fragment<T extends string>(fragment: Fragment<T>){
   const { __fragmentName, __typename, ...fields } =
     fragment;
   assert(`Fragments must have string names defined via '__fragmentName'`, __fragmentName && typeof __fragmentName === 'string');

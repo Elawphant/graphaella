@@ -13,6 +13,12 @@ import { variable } from './variable';
 
 type VariableName = string;
 
+const LIST_TYPES = new Set([
+  ExpectedType.connection,
+  ExpectedType.edges,
+  ExpectedType.nodeList]);
+
+
 /**
  * Class responsible for managing composables.
  *
@@ -136,11 +142,6 @@ class Composer {
 
       const params = this.composeParams(__args);
 
-      const listTypes = new Set([
-        ExpectedType.connection,
-        ExpectedType.edges,
-        ExpectedType.nodeList]);
-
       const nestedFields =
         Object.keys(fields).length > 0
           ? Object.entries(fields as Record<string, QueryField>)
@@ -150,7 +151,7 @@ class Composer {
                 declaration,
                 expectation.path,
                 level + 1,
-                listTypes.has(expectation.type)
+                LIST_TYPES.has(expectation.type)
                   ? __toLocalType
                   : undefined,
               );

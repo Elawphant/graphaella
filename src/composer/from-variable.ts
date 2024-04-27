@@ -15,7 +15,7 @@ import type { Composer } from './composer';
  * ]
  * ```
  * */
-const fromVariable = (variableName: string) => {
+function fromVariable(variableName: string) {
   const __fromVariable = (
     variables: Composer['operationVariables'],
   ) => {

@@ -1,10 +1,10 @@
 import { assert } from './assert';
 
-const variable = (
+function variable(
   value: unknown,
   customScalar: string,
   nonNullable: boolean,
-) => {
+) {
   const __configurationHandler = (
     variableName: string,
   ) => {

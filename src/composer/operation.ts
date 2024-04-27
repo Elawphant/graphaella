@@ -47,7 +47,7 @@ import type { OperationType, OperationHandler, QueryOperation, OperationBuilder 
  * }));
  * ```
  */
-const operation: OperationBuilder = (type: OperationType, operation: QueryOperation) => {
+function operation(type: OperationType, operation: QueryOperation) {
   const __handler: OperationHandler = (composer: Composer) => {
 
     return handleOperation(type, operation, composer)
