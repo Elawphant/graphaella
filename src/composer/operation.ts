@@ -1,6 +1,6 @@
 import type { Composer } from './composer';
 import { configureHandler, handleOperation } from './operation-handler';
-import type { OperationType, OperationHandler, QueryOperation, OperationBuilder } from './types';
+import type { OperationType, OperationHandler, QueryOperation } from './types';
 
 /**
  * A function for generating a query operation GraphQL source documents
