@@ -80,6 +80,7 @@ class Composer {
     enforceLocalType?: string,
     registerExpectations: boolean = true,
   ): string => {
+    let output: string = ``;
     const {
       __alias,
       __connection,
@@ -158,14 +159,13 @@ class Composer {
             })
             .join(' ')
           : '';
-
       // leave indentations as is
-      return ` ${this.resolveFieldNaming(key, __alias)} ${params} ${this.composeDirectives(__directives)} { ${__scalars ? __scalars.join(' ') : ''} ${fragmentSpreads} ${nestedFields} }`;
+      output = ` ${this.resolveFieldNaming(key, __alias)} ${params} ${this.composeDirectives(__directives)} { ${__scalars ? __scalars.join(' ') : ''} ${fragmentSpreads} ${this.wrapInNodeType(expectation.type, expectation.key === "node", nestedFields)} }`;
     } else {
-      return ' ' + this.resolveFieldNaming(key, __alias);
+      output = ' ' + this.resolveFieldNaming(key, __alias);
     }
+    return output;
   };
-
 
   /** Internal method that saves the expectation for later usage */
   private registerExpectation = (
@@ -284,11 +284,17 @@ class Composer {
 
 
   /** Returns aliased or unaliased field piece for GraphQl source */
-  private resolveFieldNaming = (key: string, alias?: string) => {
+  private resolveFieldNaming = (key: string, alias?: string, isNode: boolean = false, typename?:string) => {
     return alias ? `${alias}: ${key}` : key;
   };
 
-
+  private wrapInNodeType = (typename: string, isNode = false, nestedFields:string) => {
+    return isNode ? 
+      `... on  ${typename} {
+        ${nestedFields}
+      }` :
+      `${nestedFields}`
+  }
 
   private composeParams = (
     params?: Record<string, unknown | ReturnType<typeof fromVariable>>,
